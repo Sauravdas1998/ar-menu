@@ -2,41 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AR Food Menu 🍔🍕🍝</title>
+  <title>🍽️ AR Food Menu</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
-      font-family: sans-serif;
-      background: #111;
-      color: white;
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1rem;
       text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
     }
 
-    h2 {
-      margin-top: 1rem;
-    }
-
-    .menu {
+    .menu-bar {
       display: flex;
       justify-content: center;
-      flex-wrap: wrap;
       gap: 1rem;
       padding: 1rem;
+      flex-wrap: wrap;
     }
 
-    .btn {
-      padding: 12px 20px;
-      background: #ff6600;
-      color: white;
-      font-weight: bold;
-      border: none;
+    .dish-card {
+      background: #1a1a1a;
+      border: 2px solid #333;
       border-radius: 10px;
+      padding: 10px;
+      width: 100px;
+      text-align: center;
       cursor: pointer;
+      transition: transform 0.3s ease;
     }
 
-    .btn:hover {
-      background: #ff7f2a;
+    .dish-card:hover {
+      transform: scale(1.05);
+      border-color: #ff6600;
+    }
+
+    .dish-card img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 5px;
     }
 
     model-viewer {
@@ -57,19 +78,48 @@
       z-index: 999;
       display: none;
     }
+
+    #backBtn {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background: #ff6600;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1001;
+      display: none;
+    }
+
+    #backBtn:hover {
+      background: #ff8533;
+    }
   </style>
 </head>
 <body>
 
-  <h2>Tap a Dish to See It in Your World 🍽️</h2>
+  <header>🍴 AR Food Menu – Place it in Your World</header>
 
-  <div class="menu">
-    <button class="btn" onclick="switchDish('burger.glb', 'burger.mp3')">🍔 Burger</button>
-    <button class="btn" onclick="switchDish('pizza.glb', 'pizza.mp3')">🍕 Pizza</button>
-    <button class="btn" onclick="switchDish('pasta.glb', 'pasta.mp3')">🍝 Pasta</button>
+  <!-- Dish Switcher Menu -->
+  <div class="menu-bar" id="dishMenu">
+    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3')">
+      <img src="burger.jpg" alt="Burger" />
+      Burger
+    </div>
+    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3')">
+      <img src="pizza.jpg" alt="Pizza" />
+      Pizza
+    </div>
+    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3')">
+      <img src="pasta.jpg" alt="Pasta" />
+      Pasta
+    </div>
   </div>
 
-  <!-- 3D Model Viewer -->
+  <!-- AR Model -->
   <model-viewer id="viewer"
     ar
     ar-modes="webxr scene-viewer quick-look"
@@ -81,50 +131,53 @@
     exposure="1">
   </model-viewer>
 
+  <!-- Spinner GIF -->
+  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+
   <!-- Audio FX -->
   <audio id="dish-audio" preload="auto"></audio>
 
-  <!-- Spinner GIF (replace with your own or use this URL) -->
-  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+  <!-- Back Button -->
+  <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
 
   <script>
     function switchDish(modelFile, soundFile) {
       const viewer = document.getElementById('viewer');
       const audio = document.getElementById('dish-audio');
       const spinner = document.getElementById('spinner');
+      const backBtn = document.getElementById('backBtn');
+      const menu = document.getElementById('dishMenu');
 
-      // Reset fade
+      // Reset and show loading
       viewer.style.opacity = 0;
-
-      // Show spinner
       spinner.style.display = 'block';
-
-      // Set model + show viewer
-      viewer.src = modelFile;
       viewer.style.display = 'block';
 
-      // When model is loaded
+      // Hide menu, show back button
+      menu.style.display = 'none';
+      backBtn.style.display = 'block';
+
+      // Set model
+      viewer.src = modelFile;
+
       viewer.addEventListener('load', () => {
-        // Fade in model
         viewer.style.opacity = 1;
-
-        // Hide spinner
         spinner.style.display = 'none';
-
-        // Trigger AR
         viewer.activateAR();
 
-        // Play sound FX
         if (soundFile) {
           audio.src = soundFile;
           audio.play().catch(() => {
-            console.warn("Autoplay blocked — user may need to tap.");
+            console.warn("Autoplay blocked — user interaction needed.");
           });
         }
       }, { once: true });
+    }
 
-      // Update title
-      document.querySelector('h2').textContent = 'Placing your ' + modelFile.split('.')[0] + '...';
+    function goBackToMenu() {
+      document.getElementById('viewer').style.display = 'none';
+      document.getElementById('dishMenu').style.display = 'flex';
+      document.getElementById('backBtn').style.display = 'none';
     }
   </script>
 
