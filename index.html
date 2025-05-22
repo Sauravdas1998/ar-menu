@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Place Your Food in AR</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #111;
+        color: white;
+        text-align: center;
+      }
+      .menu {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        padding: 10px 20px;
+        background: #ff5c00;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background: #ff7833;
+      }
+      model-viewer {
+        width: 100vw;
+        height: 100vh;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Select a Dish to View in Your World</h2>
+    <div class="menu">
+      <button class="btn" onclick="loadModel('burger.glb')">🍔 Burger</button>
+      <button class="btn" onclick="loadModel('pizza.glb')">🍕 Pizza</button>
+      <button class="btn" onclick="loadModel('pasta.glb')">🍝 Pasta</button>
+    </div>
+
+    <model-viewer id="viewer"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      camera-controls
+      touch-action="pan-y"
+      autoplay
+      environment-image="neutral"
+      shadow-intensity="1"
+      exposure="1"
+    >
+    </model-viewer>
+
+    <script>
+      function loadModel(modelName) {
+        const viewer = document.getElementById('viewer');
+        viewer.src = modelName;
+        viewer.setAttribute('reveal', 'auto');
+        viewer.setAttribute('ar-placement', 'floor');
+        viewer.style.display = 'block';
+        document.querySelector('.menu').style.display = 'none';
+        document.querySelector('h2').textContent = 'Tap the floor to place your dish 🍽️';
+        viewer.activateAR();
+      }
+    </script>
+  </body>
+</html>
