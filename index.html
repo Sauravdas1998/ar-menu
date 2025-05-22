@@ -13,6 +13,7 @@
       color: #fff;
       overflow: hidden;
     }
+
     .carousel {
       display: flex;
       overflow-x: auto;
@@ -20,16 +21,19 @@
       height: 100vh;
       width: 100vw;
     }
+
     .slide {
       flex: 0 0 100%;
       scroll-snap-align: center;
       position: relative;
     }
+
     model-viewer {
       width: 100%;
       height: 100vh;
       background: #111;
     }
+
     .label {
       position: absolute;
       bottom: 10%;
@@ -41,6 +45,7 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
+
     #spinner {
       position: fixed;
       top: 50%;
@@ -61,15 +66,15 @@
 
 <div class="carousel" id="carousel">
   <div class="slide" data-model="dishes/burger.glb" data-sound="dishes/burger.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <model-viewer src="dishes/burger.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
     <div class="label">🍔 Burger</div>
   </div>
   <div class="slide" data-model="dishes/pizza.glb" data-sound="dishes/pizza.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <model-viewer src="dishes/pizza.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
     <div class="label">🍕 Pizza</div>
   </div>
   <div class="slide" data-model="dishes/pasta.glb" data-sound="dishes/pasta.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <model-viewer src="dishes/pasta.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
     <div class="label">🍝 Pasta</div>
   </div>
 </div>
@@ -78,10 +83,8 @@
   const carousel = document.getElementById('carousel');
   const audio = document.getElementById('dish-audio');
   const spinner = document.getElementById('spinner');
-
   const slides = document.querySelectorAll('.slide');
 
-  // Load model + play audio when in view
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -89,15 +92,17 @@
         const modelFile = entry.target.dataset.model;
         const soundFile = entry.target.dataset.sound;
 
+        console.log("Loading model:", modelFile);
         spinner.style.display = 'block';
-        modelViewer.src = modelFile;
-        audio.src = soundFile;
 
         modelViewer.addEventListener('load', () => {
           spinner.style.display = 'none';
           modelViewer.activateAR();
+          audio.src = soundFile;
           audio.play().catch(() => {});
         }, { once: true });
+
+        modelViewer.src = modelFile; // Important: set AFTER event listener
       }
     });
   }, { threshold: 0.6 });
