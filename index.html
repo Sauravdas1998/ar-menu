@@ -2,65 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🍽️ AR Swipe Menu</title>
+  <title>AR Swipe Menu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: #0d0d0d;
+      font-family: sans-serif;
+      background: #000;
       color: #fff;
       overflow: hidden;
     }
-
-    header {
-      text-align: center;
-      font-size: 1.4rem;
-      padding: 1rem;
-      background: #000;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-
     .carousel {
       display: flex;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
       height: 100vh;
       width: 100vw;
     }
-
     .slide {
-      scroll-snap-align: start;
       flex: 0 0 100%;
+      scroll-snap-align: center;
       position: relative;
     }
-
     model-viewer {
       width: 100%;
-      height: 100%;
+      height: 100vh;
       background: #111;
-      --poster-color: transparent;
     }
-
-    .dish-label {
+    .label {
       position: absolute;
-      bottom: 1rem;
+      bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.6);
       padding: 10px 20px;
       border-radius: 20px;
-      font-weight: bold;
       font-size: 1.2rem;
+      font-weight: bold;
     }
-
     #spinner {
       position: fixed;
       top: 50%;
@@ -75,86 +55,67 @@
 </head>
 <body>
 
-<header>🍴 Swipe to Explore Dishes in AR</header>
+<img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading Spinner" />
 
-<!-- Spinner -->
-<img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
-
-<!-- Audio Element -->
 <audio id="dish-audio" preload="auto"></audio>
 
-<!-- Carousel -->
 <div class="carousel" id="carousel">
   <div class="slide" data-model="dishes/burger.glb" data-sound="dishes/burger.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1">
-    </model-viewer>
-    <div class="dish-label">🍔 Burger</div>
+    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <div class="label">🍔 Burger</div>
   </div>
   <div class="slide" data-model="dishes/pizza.glb" data-sound="dishes/pizza.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1">
-    </model-viewer>
-    <div class="dish-label">🍕 Pizza</div>
+    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <div class="label">🍕 Pizza</div>
   </div>
   <div class="slide" data-model="dishes/pasta.glb" data-sound="dishes/pasta.mp3">
-    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1">
-    </model-viewer>
-    <div class="dish-label">🍝 Pasta</div>
+    <model-viewer ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
+    <div class="label">🍝 Pasta</div>
   </div>
 </div>
 
 <script>
-  const spinner = document.getElementById('spinner');
-  const audio = document.getElementById('dish-audio');
-  const slides = document.querySelectorAll('.slide');
   const carousel = document.getElementById('carousel');
+  const audio = document.getElementById('dish-audio');
+  const spinner = document.getElementById('spinner');
 
-  slides.forEach((slide, i) => {
-    const modelViewer = slide.querySelector('model-viewer');
-    const modelFile = slide.dataset.model;
-    const soundFile = slide.dataset.sound;
+  const slides = document.querySelectorAll('.slide');
 
-    // Load model file
-    modelViewer.src = modelFile;
-
-    // Show spinner until loaded
-    modelViewer.addEventListener('load', () => {
-      spinner.style.display = 'none';
-    });
-
-    modelViewer.addEventListener('preload', () => {
-      spinner.style.display = 'block';
-    });
-  });
-
-  // Detect active slide and trigger sound + AR
+  // Load model + play audio when in view
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const modelViewer = entry.target.querySelector('model-viewer');
-        const sound = entry.target.dataset.sound;
+        const modelFile = entry.target.dataset.model;
+        const soundFile = entry.target.dataset.sound;
 
-        modelViewer.activateAR();
-        audio.src = sound;
-        audio.play().catch(() => {});
+        spinner.style.display = 'block';
+        modelViewer.src = modelFile;
+        audio.src = soundFile;
+
+        modelViewer.addEventListener('load', () => {
+          spinner.style.display = 'none';
+          modelViewer.activateAR();
+          audio.play().catch(() => {});
+        }, { once: true });
       }
     });
   }, { threshold: 0.6 });
 
   slides.forEach(slide => observer.observe(slide));
 
-  // Swipe gestures (rotation + navigation)
-  const hammertime = new Hammer(carousel);
-  hammertime.get('swipe').set({ direction: Hammer.DIRECTION_ALL });
+  // Basic swipe support
+  let touchStartX = 0;
+  carousel.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
 
-  hammertime.on('swipeleft', () => carousel.scrollBy({ left: window.innerWidth, behavior: 'smooth' }));
-  hammertime.on('swiperight', () => carousel.scrollBy({ left: -window.innerWidth, behavior: 'smooth' }));
+  carousel.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const deltaX = touchEndX - touchStartX;
 
-  // Swipe up/down = rotate model
-  hammertime.on('panleft panright', ev => {
-    const activeSlide = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)?.closest('.slide');
-    if (activeSlide) {
-      const mv = activeSlide.querySelector('model-viewer');
-      if (mv) mv.cameraOrbit = `${(parseFloat(mv.getAttribute('camera-orbit')?.split('deg')[0]) || 0) - ev.deltaX * 0.1}deg 75deg 2.5m`;
+    if (Math.abs(deltaX) > 50) {
+      carousel.scrollBy({ left: -deltaX, behavior: 'smooth' });
     }
   });
 </script>
