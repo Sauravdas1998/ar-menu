@@ -2,226 +2,241 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🍽️ Hardcore AR Food Menu</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>🍽️ AR Food Menu with Nutrition & Ratings</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+
   <style>
-    body, html {
-      margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif;
-      background: #000;
-      color: white;
-      user-select: none;
-      -webkit-user-select: none;
+    * {
+      box-sizing: border-box;
     }
-    #infoPanel {
-      position: absolute;
-      top: 10px; left: 10px;
-      z-index: 10;
-      background: rgba(0,0,0,0.6);
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+    .menu-bar {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1rem;
+      flex-wrap: wrap;
+    }
+    .dish-card {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
       padding: 10px;
-      border-radius: 8px;
-      max-width: 320px;
+      width: 100px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
     }
-    button {
-      font-size: 1rem;
-      margin-top: 10px;
-      padding: 8px 12px;
+    .dish-card:hover {
+      transform: scale(1.05);
+      border-color: #ff6600;
+    }
+    .dish-card img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+    model-viewer {
+      width: 100vw;
+      height: 60vh;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      background: #111;
+    }
+    #spinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 80px;
+      height: 80px;
+      margin: -40px 0 0 -40px;
+      z-index: 999;
+      display: none;
+    }
+    #backBtn {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
       background: #ff6600;
       border: none;
       color: white;
-      border-radius: 5px;
+      padding: 10px 16px;
+      font-weight: bold;
+      border-radius: 8px;
       cursor: pointer;
+      z-index: 1001;
+      display: none;
     }
-    button:hover {
+    #backBtn:hover {
       background: #ff8533;
+    }
+    #dishInfo {
+      max-width: 400px;
+      margin: 1rem auto;
+      background: rgba(20, 20, 20, 0.8);
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      box-shadow: 0 0 20px #ff6600aa;
+      font-size: 1rem;
+      display: none;
+      line-height: 1.4;
+    }
+    #dishInfo h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+    }
+    #dishInfo p {
+      margin: 0.3rem 0;
     }
   </style>
 </head>
 <body>
 
-<div id="infoPanel">
-  <h2>Choose your dish</h2>
-  <button onclick="loadDish('https://models.example.com/burger.glb', 'Burger', 'Calories: 450', '$8.99', 4.5)">🍔 Burger</button>
-  <button onclick="loadDish('https://models.example.com/pizza.glb', 'Pizza', 'Calories: 700', '$12.99', 4.7)">🍕 Pizza</button>
-  <button onclick="loadDish('https://models.example.com/pasta.glb', 'Pasta', 'Calories: 550', '$10.99', 4.6)">🍝 Pasta</button>
-  <p><small>Tap on your choice and then scan your surroundings!</small></p>
-</div>
+  <header>🍴 AR Food Menu – Place it in Your World</header>
 
-<script type="module">
+  <!-- Dish Switcher Menu -->
+  <div class="menu-bar" id="dishMenu">
+    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3')">
+      <img src="burger.jpg" alt="Burger" />
+      Burger
+    </div>
+    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3')">
+      <img src="pizza.jpg" alt="Pizza" />
+      Pizza
+    </div>
+    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3')">
+      <img src="pasta.jpg" alt="Pasta" />
+      Pasta
+    </div>
+  </div>
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js';
-import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/webxr/ARButton.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/loaders/GLTFLoader.js';
+  <!-- AR Model -->
+  <model-viewer id="viewer"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    touch-action="pan-y"
+    autoplay
+    environment-image="neutral"
+    shadow-intensity="1"
+    exposure="1">
+  </model-viewer>
 
-let container;
-let camera, scene, renderer;
-let controller;
-let reticle;
-let model = null;
-let infoGroup;
-let loadedDish = null;
+  <!-- Spinner GIF -->
+  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
 
-init();
+  <!-- Audio FX -->
+  <audio id="dish-audio" preload="auto"></audio>
 
-function init() {
-  container = document.createElement('div');
-  document.body.appendChild(container);
+  <!-- Back Button -->
+  <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
 
-  scene = new THREE.Scene();
+  <!-- Nutrition & Ratings Info -->
+  <div id="dishInfo">
+    <h2 id="dishName">Dish Name</h2>
+    <p><strong>Price:</strong> <span id="dishPrice">₹0</span></p>
+    <p><strong>Calories:</strong> <span id="dishCalories">0</span> kcal</p>
+    <p><strong>Protein:</strong> <span id="dishProtein">0</span> g</p>
+    <p><strong>Rating:</strong> <span id="dishRating">⭐️⭐️⭐️⭐️⭐️</span></p>
+  </div>
 
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 20);
-
-  // Lighting
-  const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-  light.position.set(0.5, 1, 0.25);
-  scene.add(light);
-
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true;
-  container.appendChild(renderer.domElement);
-
-  // AR Button
-  document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
-
-  // Controller for hit testing
-  controller = renderer.xr.getController(0);
-  controller.addEventListener('select', onSelect);
-  scene.add(controller);
-
-  // Reticle for surface detection
-  reticle = new THREE.Mesh(
-    new THREE.RingGeometry(0.07, 0.1, 32).rotateX(-Math.PI/2),
-    new THREE.MeshBasicMaterial({ color: 0xff6600 })
-  );
-  reticle.matrixAutoUpdate = false;
-  reticle.visible = false;
-  scene.add(reticle);
-
-  // Group to hold model + info overlays
-  infoGroup = new THREE.Group();
-  scene.add(infoGroup);
-
-  window.addEventListener('resize', onWindowResize, false);
-
-  renderer.setAnimationLoop(render);
-}
-
-// When user taps on detected surface to place the model
-function onSelect() {
-  if (reticle.visible && loadedDish) {
-    // Place model + info group at reticle position
-    infoGroup.position.setFromMatrixPosition(reticle.matrix);
-    infoGroup.visible = true;
-  }
-}
-
-function loadDish(modelUrl, name, nutrition, price, rating) {
-  loadedDish = { modelUrl, name, nutrition, price, rating };
-  infoGroup.visible = false;
-
-  // Clear previous model/info
-  while(infoGroup.children.length) {
-    let child = infoGroup.children[0];
-    child.geometry?.dispose();
-    if(child.material) {
-      if(Array.isArray(child.material)) {
-        child.material.forEach(m => m.dispose());
-      } else {
-        child.material.dispose();
+  <script>
+    const DISH_DATA = {
+      'burger.glb': {
+        name: 'Classic Burger 🍔',
+        price: '₹199',
+        calories: 540,
+        protein: 25,
+        rating: '⭐️⭐️⭐️⭐️'
+      },
+      'pizza.glb': {
+        name: 'Cheesy Pizza 🍕',
+        price: '₹249',
+        calories: 680,
+        protein: 30,
+        rating: '⭐️⭐️⭐️⭐️⭐️'
+      },
+      'pasta.glb': {
+        name: 'Creamy Pasta 🍝',
+        price: '₹229',
+        calories: 460,
+        protein: 18,
+        rating: '⭐️⭐️⭐️⭐️'
       }
-    }
-    infoGroup.remove(child);
-  }
+    };
 
-  // Load GLTF Model
-  const loader = new GLTFLoader();
-  loader.load(modelUrl, gltf => {
-    model = gltf.scene;
-    model.scale.set(0.3, 0.3, 0.3);
-    infoGroup.add(model);
+    function switchDish(modelFile, soundFile) {
+      const viewer = document.getElementById('viewer');
+      const audio = document.getElementById('dish-audio');
+      const spinner = document.getElementById('spinner');
+      const backBtn = document.getElementById('backBtn');
+      const menu = document.getElementById('dishMenu');
+      const info = document.getElementById('dishInfo');
 
-    // Add floating 3D text for info
-    add3DText(name, 0, 0.5, 0);
-    add3DText(nutrition, 0, 0.3, 0);
-    add3DText(price, 0, 0.1, 0);
-    add3DText(`⭐ ${rating}`, 0, -0.1, 0);
+      // Reset and show loading
+      viewer.style.opacity = 0;
+      spinner.style.display = 'block';
+      viewer.style.display = 'block';
+      info.style.display = 'none';
 
-    alert("Now tap on a flat surface to place your dish!");
-  }, undefined, e => {
-    alert("Failed to load 3D model: " + e.message);
-  });
-}
+      // Hide menu, show back button
+      menu.style.display = 'none';
+      backBtn.style.display = 'block';
 
-function add3DText(text, x, y, z) {
-  // For quick demo, use THREE.js built-in TextGeometry requires loading font, which is bulky.
-  // Instead, use simple sprites as text placeholders
+      // Set model
+      viewer.src = modelFile;
 
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = 256;
-  canvas.height = 64;
-  ctx.font = '30px Arial';
-  ctx.fillStyle = 'white';
-  ctx.textAlign = 'center';
-  ctx.fillText(text, 128, 48);
+      viewer.addEventListener('load', () => {
+        viewer.style.opacity = 1;
+        spinner.style.display = 'none';
+        viewer.activateAR();
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(material);
-  sprite.position.set(x, y, z);
-  sprite.scale.set(0.5, 0.125, 1);
-  infoGroup.add(sprite);
-}
-
-function onWindowResize() {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function render(timestamp, frame) {
-  if(frame) {
-    const referenceSpace = renderer.xr.getReferenceSpace();
-    const session = renderer.xr.getSession();
-
-    if(session && referenceSpace) {
-      // Hit test source requested once
-      if(!hitTestSourceRequested) {
-        session.requestReferenceSpace('viewer').then((refSpace) => {
-          session.requestHitTestSource({ space: refSpace }).then(source => {
-            hitTestSource = source;
+        if (soundFile) {
+          audio.src = soundFile;
+          audio.play().catch(() => {
+            console.warn("Autoplay blocked — user interaction needed.");
           });
-        });
-        session.addEventListener('end', () => {
-          hitTestSourceRequested = false;
-          hitTestSource = null;
-        });
-        hitTestSourceRequested = true;
-      }
-      // Perform hit test
-      if(hitTestSource) {
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if(hitTestResults.length) {
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(referenceSpace);
-          reticle.visible = true;
-          reticle.matrix.fromArray(pose.transform.matrix);
-        } else {
-          reticle.visible = false;
         }
-      }
+
+        // Show info
+        const data = DISH_DATA[modelFile];
+        if (data) {
+          document.getElementById('dishName').innerText = data.name;
+          document.getElementById('dishPrice').innerText = data.price;
+          document.getElementById('dishCalories').innerText = data.calories;
+          document.getElementById('dishProtein').innerText = data.protein;
+          document.getElementById('dishRating').innerText = data.rating;
+          info.style.display = 'block';
+        }
+      }, { once: true });
     }
-  }
 
-  renderer.render(scene, camera);
-}
-
-let hitTestSource = null;
-let hitTestSourceRequested = false;
-
-</script>
+    function goBackToMenu() {
+      document.getElementById('viewer').style.display = 'none';
+      document.getElementById('dishMenu').style.display = 'flex';
+      document.getElementById('backBtn').style.display = 'none';
+      document.getElementById('dishInfo').style.display = 'none';
+    }
+  </script>
 
 </body>
 </html>
