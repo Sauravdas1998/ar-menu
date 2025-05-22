@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🍽️ AR Food Menu</title>
+  <title>🍽️ AR Food Menu with Nutrition & Ratings</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
 
   <style>
     * {
@@ -17,7 +17,6 @@
       color: #fff;
       overflow-x: hidden;
     }
-
     header {
       position: sticky;
       top: 0;
@@ -29,7 +28,6 @@
       z-index: 1000;
       backdrop-filter: blur(10px);
     }
-
     .menu-bar {
       display: flex;
       justify-content: center;
@@ -37,7 +35,6 @@
       padding: 1rem;
       flex-wrap: wrap;
     }
-
     .dish-card {
       background: #1a1a1a;
       border: 2px solid #333;
@@ -48,26 +45,23 @@
       cursor: pointer;
       transition: transform 0.3s ease;
     }
-
     .dish-card:hover {
       transform: scale(1.05);
       border-color: #ff6600;
     }
-
     .dish-card img {
       width: 100%;
       border-radius: 8px;
       margin-bottom: 5px;
     }
-
     model-viewer {
       width: 100vw;
-      height: 100vh;
+      height: 60vh;
       display: none;
       opacity: 0;
       transition: opacity 0.8s ease;
+      background: #111;
     }
-
     #spinner {
       position: fixed;
       top: 50%;
@@ -78,7 +72,6 @@
       z-index: 999;
       display: none;
     }
-
     #backBtn {
       position: fixed;
       top: 1rem;
@@ -93,9 +86,26 @@
       z-index: 1001;
       display: none;
     }
-
     #backBtn:hover {
       background: #ff8533;
+    }
+    #dishInfo {
+      max-width: 400px;
+      margin: 1rem auto;
+      background: rgba(20, 20, 20, 0.8);
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      box-shadow: 0 0 20px #ff6600aa;
+      font-size: 1rem;
+      display: none;
+      line-height: 1.4;
+    }
+    #dishInfo h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.5rem;
+    }
+    #dishInfo p {
+      margin: 0.3rem 0;
     }
   </style>
 </head>
@@ -140,18 +150,53 @@
   <!-- Back Button -->
   <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
 
+  <!-- Nutrition & Ratings Info -->
+  <div id="dishInfo">
+    <h2 id="dishName">Dish Name</h2>
+    <p><strong>Price:</strong> <span id="dishPrice">₹0</span></p>
+    <p><strong>Calories:</strong> <span id="dishCalories">0</span> kcal</p>
+    <p><strong>Protein:</strong> <span id="dishProtein">0</span> g</p>
+    <p><strong>Rating:</strong> <span id="dishRating">⭐️⭐️⭐️⭐️⭐️</span></p>
+  </div>
+
   <script>
+    const DISH_DATA = {
+      'burger.glb': {
+        name: 'Classic Burger 🍔',
+        price: '₹199',
+        calories: 540,
+        protein: 25,
+        rating: '⭐️⭐️⭐️⭐️'
+      },
+      'pizza.glb': {
+        name: 'Cheesy Pizza 🍕',
+        price: '₹249',
+        calories: 680,
+        protein: 30,
+        rating: '⭐️⭐️⭐️⭐️⭐️'
+      },
+      'pasta.glb': {
+        name: 'Creamy Pasta 🍝',
+        price: '₹229',
+        calories: 460,
+        protein: 18,
+        rating: '⭐️⭐️⭐️⭐️'
+      }
+    };
+
     function switchDish(modelFile, soundFile) {
       const viewer = document.getElementById('viewer');
       const audio = document.getElementById('dish-audio');
       const spinner = document.getElementById('spinner');
       const backBtn = document.getElementById('backBtn');
       const menu = document.getElementById('dishMenu');
+      const info = document.getElementById('dishInfo');
 
       // Reset and show loading
       viewer.style.opacity = 0;
       spinner.style.display = 'block';
       viewer.style.display = 'block';
+      info.style.display = 'none';
 
       // Hide menu, show back button
       menu.style.display = 'none';
@@ -171,6 +216,17 @@
             console.warn("Autoplay blocked — user interaction needed.");
           });
         }
+
+        // Show info
+        const data = DISH_DATA[modelFile];
+        if (data) {
+          document.getElementById('dishName').innerText = data.name;
+          document.getElementById('dishPrice').innerText = data.price;
+          document.getElementById('dishCalories').innerText = data.calories;
+          document.getElementById('dishProtein').innerText = data.protein;
+          document.getElementById('dishRating').innerText = data.rating;
+          info.style.display = 'block';
+        }
       }, { once: true });
     }
 
@@ -178,6 +234,7 @@
       document.getElementById('viewer').style.display = 'none';
       document.getElementById('dishMenu').style.display = 'flex';
       document.getElementById('backBtn').style.display = 'none';
+      document.getElementById('dishInfo').style.display = 'none';
     }
   </script>
 
