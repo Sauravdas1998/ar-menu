@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🍽️ AR Food Menu with Nutrition & Ratings</title>
+  <title>🍽️ AR Food Menu with Info Overlay</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
 
@@ -17,6 +17,7 @@
       color: #fff;
       overflow-x: hidden;
     }
+
     header {
       position: sticky;
       top: 0;
@@ -28,6 +29,7 @@
       z-index: 1000;
       backdrop-filter: blur(10px);
     }
+
     .menu-bar {
       display: flex;
       justify-content: center;
@@ -35,6 +37,7 @@
       padding: 1rem;
       flex-wrap: wrap;
     }
+
     .dish-card {
       background: #1a1a1a;
       border: 2px solid #333;
@@ -44,24 +47,29 @@
       text-align: center;
       cursor: pointer;
       transition: transform 0.3s ease;
+      user-select: none;
     }
+
     .dish-card:hover {
       transform: scale(1.05);
       border-color: #ff6600;
     }
+
     .dish-card img {
       width: 100%;
       border-radius: 8px;
       margin-bottom: 5px;
     }
+
     model-viewer {
       width: 100vw;
-      height: 60vh;
+      height: 70vh;
       display: none;
       opacity: 0;
       transition: opacity 0.8s ease;
-      background: #111;
+      background: #222;
     }
+
     #spinner {
       position: fixed;
       top: 50%;
@@ -72,6 +80,7 @@
       z-index: 999;
       display: none;
     }
+
     #backBtn {
       position: fixed;
       top: 1rem;
@@ -86,26 +95,37 @@
       z-index: 1001;
       display: none;
     }
+
     #backBtn:hover {
       background: #ff8533;
     }
-    #dishInfo {
-      max-width: 400px;
-      margin: 1rem auto;
-      background: rgba(20, 20, 20, 0.8);
+
+    /* Overlay container below AR view */
+    #arOverlay {
+      position: fixed;
+      bottom: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 15px 25px;
       border-radius: 12px;
-      padding: 1rem 2rem;
-      box-shadow: 0 0 20px #ff6600aa;
+      max-width: 90vw;
       font-size: 1rem;
+      text-align: center;
+      z-index: 1002;
+      user-select: none;
       display: none;
-      line-height: 1.4;
+      box-shadow: 0 0 15px #ff6600aa;
     }
-    #dishInfo h2 {
-      margin: 0 0 0.5rem 0;
-      font-size: 1.5rem;
+
+    #arOverlay h2 {
+      margin: 0 0 8px 0;
+      font-weight: 700;
     }
-    #dishInfo p {
-      margin: 0.3rem 0;
+
+    #arOverlay p {
+      margin: 4px 0;
     }
   </style>
 </head>
@@ -115,15 +135,15 @@
 
   <!-- Dish Switcher Menu -->
   <div class="menu-bar" id="dishMenu">
-    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3')">
+    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3', 'Burger', 550, 4.5, '$7.99')">
       <img src="burger.jpg" alt="Burger" />
       Burger
     </div>
-    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3')">
+    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3', 'Pizza', 700, 4.8, '$9.99')">
       <img src="pizza.jpg" alt="Pizza" />
       Pizza
     </div>
-    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3')">
+    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3', 'Pasta', 620, 4.3, '$8.49')">
       <img src="pasta.jpg" alt="Pasta" />
       Pasta
     </div>
@@ -150,59 +170,34 @@
   <!-- Back Button -->
   <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
 
-  <!-- Nutrition & Ratings Info -->
-  <div id="dishInfo">
-    <h2 id="dishName">Dish Name</h2>
-    <p><strong>Price:</strong> <span id="dishPrice">₹0</span></p>
-    <p><strong>Calories:</strong> <span id="dishCalories">0</span> kcal</p>
-    <p><strong>Protein:</strong> <span id="dishProtein">0</span> g</p>
-    <p><strong>Rating:</strong> <span id="dishRating">⭐️⭐️⭐️⭐️⭐️</span></p>
+  <!-- Nutrition & Info Overlay -->
+  <div id="arOverlay">
+    <h2 id="dishTitle"></h2>
+    <p><strong>Calories:</strong> <span id="calories"></span> kcal</p>
+    <p><strong>Rating:</strong> <span id="rating"></span> ⭐</p>
+    <p><strong>Price:</strong> <span id="price"></span></p>
   </div>
 
   <script>
-    const DISH_DATA = {
-      'burger.glb': {
-        name: 'Classic Burger 🍔',
-        price: '₹199',
-        calories: 540,
-        protein: 25,
-        rating: '⭐️⭐️⭐️⭐️'
-      },
-      'pizza.glb': {
-        name: 'Cheesy Pizza 🍕',
-        price: '₹249',
-        calories: 680,
-        protein: 30,
-        rating: '⭐️⭐️⭐️⭐️⭐️'
-      },
-      'pasta.glb': {
-        name: 'Creamy Pasta 🍝',
-        price: '₹229',
-        calories: 460,
-        protein: 18,
-        rating: '⭐️⭐️⭐️⭐️'
-      }
-    };
-
-    function switchDish(modelFile, soundFile) {
+    function switchDish(modelFile, soundFile, title, calories, rating, price) {
       const viewer = document.getElementById('viewer');
       const audio = document.getElementById('dish-audio');
       const spinner = document.getElementById('spinner');
       const backBtn = document.getElementById('backBtn');
       const menu = document.getElementById('dishMenu');
-      const info = document.getElementById('dishInfo');
+      const overlay = document.getElementById('arOverlay');
 
-      // Reset and show loading
+      // Hide overlay and start loading
+      overlay.style.display = 'none';
       viewer.style.opacity = 0;
       spinner.style.display = 'block';
       viewer.style.display = 'block';
-      info.style.display = 'none';
 
       // Hide menu, show back button
       menu.style.display = 'none';
       backBtn.style.display = 'block';
 
-      // Set model
+      // Set model source
       viewer.src = modelFile;
 
       viewer.addEventListener('load', () => {
@@ -210,22 +205,18 @@
         spinner.style.display = 'none';
         viewer.activateAR();
 
+        // Show info overlay
+        document.getElementById('dishTitle').textContent = title;
+        document.getElementById('calories').textContent = calories;
+        document.getElementById('rating').textContent = rating;
+        document.getElementById('price').textContent = price;
+        overlay.style.display = 'block';
+
         if (soundFile) {
           audio.src = soundFile;
           audio.play().catch(() => {
             console.warn("Autoplay blocked — user interaction needed.");
           });
-        }
-
-        // Show info
-        const data = DISH_DATA[modelFile];
-        if (data) {
-          document.getElementById('dishName').innerText = data.name;
-          document.getElementById('dishPrice').innerText = data.price;
-          document.getElementById('dishCalories').innerText = data.calories;
-          document.getElementById('dishProtein').innerText = data.protein;
-          document.getElementById('dishRating').innerText = data.rating;
-          info.style.display = 'block';
         }
       }, { once: true });
     }
@@ -234,7 +225,12 @@
       document.getElementById('viewer').style.display = 'none';
       document.getElementById('dishMenu').style.display = 'flex';
       document.getElementById('backBtn').style.display = 'none';
-      document.getElementById('dishInfo').style.display = 'none';
+      document.getElementById('arOverlay').style.display = 'none';
+
+      // Pause any playing audio
+      const audio = document.getElementById('dish-audio');
+      audio.pause();
+      audio.currentTime = 0;
     }
   </script>
 
