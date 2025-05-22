@@ -58,15 +58,17 @@
     </model-viewer>
 
     <script>
-      function loadModel(modelName) {
+       function loadModel(modelName) {
         const viewer = document.getElementById('viewer');
         viewer.src = modelName;
-        viewer.setAttribute('reveal', 'auto');
-        viewer.setAttribute('ar-placement', 'floor');
         viewer.style.display = 'block';
         document.querySelector('.menu').style.display = 'none';
-        document.querySelector('h2').textContent = 'Tap the floor to place your dish 🍽️';
-        viewer.activateAR();
+        document.querySelector('h2').textContent = 'Loading... Tap the surface to place your food 🍽️';
+
+        // Try to auto-launch AR
+        viewer.addEventListener('load', () => {
+          viewer.activateAR();
+        });
       }
     </script>
   </body>
