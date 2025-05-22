@@ -1,75 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Place Your Food in AR</title>
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        font-family: sans-serif;
-        background: #111;
-        color: white;
-        text-align: center;
-      }
-      .menu {
-        display: flex;
-        justify-content: center;
-        gap: 1rem;
-        padding: 1rem;
-        flex-wrap: wrap;
-      }
-      .btn {
-        padding: 10px 20px;
-        background: #ff5c00;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-      }
-      .btn:hover {
-        background: #ff7833;
-      }
-      model-viewer {
-        width: 100vw;
-        height: 100vh;
-        display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <h2>Select a Dish to View in Your World</h2>
-    <div class="menu">
-      <button class="btn" onclick="loadModel('burger.glb')">🍔 Burger</button>
-      <button class="btn" onclick="loadModel('pizza.glb')">🍕 Pizza</button>
-      <button class="btn" onclick="loadModel('pasta.glb')">🍝 Pasta</button>
-    </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>AR Food Menu 🍔🍕🍝</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
 
-    <model-viewer id="viewer"
-      ar
-      ar-modes="webxr scene-viewer quick-look"
-      camera-controls
-      touch-action="pan-y"
-      autoplay
-      environment-image="neutral"
-      shadow-intensity="1"
-      exposure="1"
-    >
-    </model-viewer>
+    h2 {
+      margin-top: 1rem;
+    }
 
-    <script>
-       function loadModel(modelName) {
-        const viewer = document.getElementById('viewer');
-        viewer.src = modelName;
-        viewer.style.display = 'block';
-        document.querySelector('.menu').style.display = 'none';
-        document.querySelector('h2').textContent = 'Loading... Tap the surface to place your food 🍽️';
+    .menu {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+    }
 
-        // Try to auto-launch AR
-        viewer.addEventListener('load', () => {
-          viewer.activateAR();
-        });
-      }
-    </script>
-  </body>
+    .btn {
+      padding: 12px 20px;
+      background: #ff6600;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #ff7f2a;
+    }
+
+    model-viewer {
+      width: 100vw;
+      height: 100vh;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+
+    #spinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 80px;
+      height: 80px;
+      margin: -40px 0 0 -40px;
+      z-index: 999;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Tap a Dish to See It in Your World 🍽️</h2>
+
+  <div class="menu">
+    <button class="btn" onclick="switchDish('burger.glb', 'burger.mp3')">🍔 Burger</button>
+    <button class="btn" onclick="switchDish('pizza.glb', 'pizza.mp3')">🍕 Pizza</button>
+    <button class="btn" onclick="switchDish('pasta.glb', 'pasta.mp3')">🍝 Pasta</button>
+  </div>
+
+  <!-- 3D Model Viewer -->
+  <model-viewer id="viewer"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    touch-action="pan-y"
+    autoplay
+    environment-image="neutral"
+    shadow-intensity="1"
+    exposure="1">
+  </model-viewer>
+
+  <!-- Audio FX -->
+  <audio id="dish-audio" preload="auto"></audio>
+
+  <!-- Spinner GIF (replace with your own or use this URL) -->
+  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+
+  <script>
+    function switchDish(modelFile, soundFile) {
+      const viewer = document.getElementById('viewer');
+      const audio = document.getElementById('dish-audio');
+      const spinner = document.getElementById('spinner');
+
+      // Reset fade
+      viewer.style.opacity = 0;
+
+      // Show spinner
+      spinner.style.display = 'block';
+
+      // Set model + show viewer
+      viewer.src = modelFile;
+      viewer.style.display = 'block';
+
+      // When model is loaded
+      viewer.addEventListener('load', () => {
+        // Fade in model
+        viewer.style.opacity = 1;
+
+        // Hide spinner
+        spinner.style.display = 'none';
+
+        // Trigger AR
+        viewer.activateAR();
+
+        // Play sound FX
+        if (soundFile) {
+          audio.src = soundFile;
+          audio.play().catch(() => {
+            console.warn("Autoplay blocked — user may need to tap.");
+          });
+        }
+      }, { once: true });
+
+      // Update title
+      document.querySelector('h2').textContent = 'Placing your ' + modelFile.split('.')[0] + '...';
+    }
+  </script>
+
+</body>
 </html>
