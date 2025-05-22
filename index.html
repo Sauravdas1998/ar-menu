@@ -2,237 +2,226 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🍽️ AR Food Menu with Info Overlay</title>
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
-
+  <title>🍽️ Hardcore AR Food Menu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: #0d0d0d;
-      color: #fff;
-      overflow-x: hidden;
-    }
-
-    header {
-      position: sticky;
-      top: 0;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 1rem;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: bold;
-      z-index: 1000;
-      backdrop-filter: blur(10px);
-    }
-
-    .menu-bar {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      padding: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .dish-card {
-      background: #1a1a1a;
-      border: 2px solid #333;
-      border-radius: 10px;
-      padding: 10px;
-      width: 100px;
-      text-align: center;
-      cursor: pointer;
-      transition: transform 0.3s ease;
+    body, html {
+      margin: 0; padding: 0; overflow: hidden; font-family: 'Arial', sans-serif;
+      background: #000;
+      color: white;
       user-select: none;
+      -webkit-user-select: none;
     }
-
-    .dish-card:hover {
-      transform: scale(1.05);
-      border-color: #ff6600;
-    }
-
-    .dish-card img {
-      width: 100%;
+    #infoPanel {
+      position: absolute;
+      top: 10px; left: 10px;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 10px;
       border-radius: 8px;
-      margin-bottom: 5px;
+      max-width: 320px;
     }
-
-    model-viewer {
-      width: 100vw;
-      height: 70vh;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.8s ease;
-      background: #222;
-    }
-
-    #spinner {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      width: 80px;
-      height: 80px;
-      margin: -40px 0 0 -40px;
-      z-index: 999;
-      display: none;
-    }
-
-    #backBtn {
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
+    button {
+      font-size: 1rem;
+      margin-top: 10px;
+      padding: 8px 12px;
       background: #ff6600;
       border: none;
       color: white;
-      padding: 10px 16px;
-      font-weight: bold;
-      border-radius: 8px;
+      border-radius: 5px;
       cursor: pointer;
-      z-index: 1001;
-      display: none;
     }
-
-    #backBtn:hover {
+    button:hover {
       background: #ff8533;
-    }
-
-    /* Overlay container below AR view */
-    #arOverlay {
-      position: fixed;
-      bottom: 5vh;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 12px;
-      max-width: 90vw;
-      font-size: 1rem;
-      text-align: center;
-      z-index: 1002;
-      user-select: none;
-      display: none;
-      box-shadow: 0 0 15px #ff6600aa;
-    }
-
-    #arOverlay h2 {
-      margin: 0 0 8px 0;
-      font-weight: 700;
-    }
-
-    #arOverlay p {
-      margin: 4px 0;
     }
   </style>
 </head>
 <body>
 
-  <header>🍴 AR Food Menu – Place it in Your World</header>
+<div id="infoPanel">
+  <h2>Choose your dish</h2>
+  <button onclick="loadDish('https://models.example.com/burger.glb', 'Burger', 'Calories: 450', '$8.99', 4.5)">🍔 Burger</button>
+  <button onclick="loadDish('https://models.example.com/pizza.glb', 'Pizza', 'Calories: 700', '$12.99', 4.7)">🍕 Pizza</button>
+  <button onclick="loadDish('https://models.example.com/pasta.glb', 'Pasta', 'Calories: 550', '$10.99', 4.6)">🍝 Pasta</button>
+  <p><small>Tap on your choice and then scan your surroundings!</small></p>
+</div>
 
-  <!-- Dish Switcher Menu -->
-  <div class="menu-bar" id="dishMenu">
-    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3', 'Burger', 550, 4.5, '$7.99')">
-      <img src="burger.jpg" alt="Burger" />
-      Burger
-    </div>
-    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3', 'Pizza', 700, 4.8, '$9.99')">
-      <img src="pizza.jpg" alt="Pizza" />
-      Pizza
-    </div>
-    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3', 'Pasta', 620, 4.3, '$8.49')">
-      <img src="pasta.jpg" alt="Pasta" />
-      Pasta
-    </div>
-  </div>
+<script type="module">
 
-  <!-- AR Model -->
-  <model-viewer id="viewer"
-    ar
-    ar-modes="webxr scene-viewer quick-look"
-    camera-controls
-    touch-action="pan-y"
-    autoplay
-    environment-image="neutral"
-    shadow-intensity="1"
-    exposure="1">
-  </model-viewer>
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js';
+import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/webxr/ARButton.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/loaders/GLTFLoader.js';
 
-  <!-- Spinner GIF -->
-  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
+let container;
+let camera, scene, renderer;
+let controller;
+let reticle;
+let model = null;
+let infoGroup;
+let loadedDish = null;
 
-  <!-- Audio FX -->
-  <audio id="dish-audio" preload="auto"></audio>
+init();
 
-  <!-- Back Button -->
-  <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
+function init() {
+  container = document.createElement('div');
+  document.body.appendChild(container);
 
-  <!-- Nutrition & Info Overlay -->
-  <div id="arOverlay">
-    <h2 id="dishTitle"></h2>
-    <p><strong>Calories:</strong> <span id="calories"></span> kcal</p>
-    <p><strong>Rating:</strong> <span id="rating"></span> ⭐</p>
-    <p><strong>Price:</strong> <span id="price"></span></p>
-  </div>
+  scene = new THREE.Scene();
 
-  <script>
-    function switchDish(modelFile, soundFile, title, calories, rating, price) {
-      const viewer = document.getElementById('viewer');
-      const audio = document.getElementById('dish-audio');
-      const spinner = document.getElementById('spinner');
-      const backBtn = document.getElementById('backBtn');
-      const menu = document.getElementById('dishMenu');
-      const overlay = document.getElementById('arOverlay');
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 20);
 
-      // Hide overlay and start loading
-      overlay.style.display = 'none';
-      viewer.style.opacity = 0;
-      spinner.style.display = 'block';
-      viewer.style.display = 'block';
+  // Lighting
+  const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+  light.position.set(0.5, 1, 0.25);
+  scene.add(light);
 
-      // Hide menu, show back button
-      menu.style.display = 'none';
-      backBtn.style.display = 'block';
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+  container.appendChild(renderer.domElement);
 
-      // Set model source
-      viewer.src = modelFile;
+  // AR Button
+  document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
 
-      viewer.addEventListener('load', () => {
-        viewer.style.opacity = 1;
-        spinner.style.display = 'none';
-        viewer.activateAR();
+  // Controller for hit testing
+  controller = renderer.xr.getController(0);
+  controller.addEventListener('select', onSelect);
+  scene.add(controller);
 
-        // Show info overlay
-        document.getElementById('dishTitle').textContent = title;
-        document.getElementById('calories').textContent = calories;
-        document.getElementById('rating').textContent = rating;
-        document.getElementById('price').textContent = price;
-        overlay.style.display = 'block';
+  // Reticle for surface detection
+  reticle = new THREE.Mesh(
+    new THREE.RingGeometry(0.07, 0.1, 32).rotateX(-Math.PI/2),
+    new THREE.MeshBasicMaterial({ color: 0xff6600 })
+  );
+  reticle.matrixAutoUpdate = false;
+  reticle.visible = false;
+  scene.add(reticle);
 
-        if (soundFile) {
-          audio.src = soundFile;
-          audio.play().catch(() => {
-            console.warn("Autoplay blocked — user interaction needed.");
+  // Group to hold model + info overlays
+  infoGroup = new THREE.Group();
+  scene.add(infoGroup);
+
+  window.addEventListener('resize', onWindowResize, false);
+
+  renderer.setAnimationLoop(render);
+}
+
+// When user taps on detected surface to place the model
+function onSelect() {
+  if (reticle.visible && loadedDish) {
+    // Place model + info group at reticle position
+    infoGroup.position.setFromMatrixPosition(reticle.matrix);
+    infoGroup.visible = true;
+  }
+}
+
+function loadDish(modelUrl, name, nutrition, price, rating) {
+  loadedDish = { modelUrl, name, nutrition, price, rating };
+  infoGroup.visible = false;
+
+  // Clear previous model/info
+  while(infoGroup.children.length) {
+    let child = infoGroup.children[0];
+    child.geometry?.dispose();
+    if(child.material) {
+      if(Array.isArray(child.material)) {
+        child.material.forEach(m => m.dispose());
+      } else {
+        child.material.dispose();
+      }
+    }
+    infoGroup.remove(child);
+  }
+
+  // Load GLTF Model
+  const loader = new GLTFLoader();
+  loader.load(modelUrl, gltf => {
+    model = gltf.scene;
+    model.scale.set(0.3, 0.3, 0.3);
+    infoGroup.add(model);
+
+    // Add floating 3D text for info
+    add3DText(name, 0, 0.5, 0);
+    add3DText(nutrition, 0, 0.3, 0);
+    add3DText(price, 0, 0.1, 0);
+    add3DText(`⭐ ${rating}`, 0, -0.1, 0);
+
+    alert("Now tap on a flat surface to place your dish!");
+  }, undefined, e => {
+    alert("Failed to load 3D model: " + e.message);
+  });
+}
+
+function add3DText(text, x, y, z) {
+  // For quick demo, use THREE.js built-in TextGeometry requires loading font, which is bulky.
+  // Instead, use simple sprites as text placeholders
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 256;
+  canvas.height = 64;
+  ctx.font = '30px Arial';
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, 128, 48);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(material);
+  sprite.position.set(x, y, z);
+  sprite.scale.set(0.5, 0.125, 1);
+  infoGroup.add(sprite);
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function render(timestamp, frame) {
+  if(frame) {
+    const referenceSpace = renderer.xr.getReferenceSpace();
+    const session = renderer.xr.getSession();
+
+    if(session && referenceSpace) {
+      // Hit test source requested once
+      if(!hitTestSourceRequested) {
+        session.requestReferenceSpace('viewer').then((refSpace) => {
+          session.requestHitTestSource({ space: refSpace }).then(source => {
+            hitTestSource = source;
           });
+        });
+        session.addEventListener('end', () => {
+          hitTestSourceRequested = false;
+          hitTestSource = null;
+        });
+        hitTestSourceRequested = true;
+      }
+      // Perform hit test
+      if(hitTestSource) {
+        const hitTestResults = frame.getHitTestResults(hitTestSource);
+        if(hitTestResults.length) {
+          const hit = hitTestResults[0];
+          const pose = hit.getPose(referenceSpace);
+          reticle.visible = true;
+          reticle.matrix.fromArray(pose.transform.matrix);
+        } else {
+          reticle.visible = false;
         }
-      }, { once: true });
+      }
     }
+  }
 
-    function goBackToMenu() {
-      document.getElementById('viewer').style.display = 'none';
-      document.getElementById('dishMenu').style.display = 'flex';
-      document.getElementById('backBtn').style.display = 'none';
-      document.getElementById('arOverlay').style.display = 'none';
+  renderer.render(scene, camera);
+}
 
-      // Pause any playing audio
-      const audio = document.getElementById('dish-audio');
-      audio.pause();
-      audio.currentTime = 0;
-    }
-  </script>
+let hitTestSource = null;
+let hitTestSourceRequested = false;
+
+</script>
 
 </body>
 </html>
