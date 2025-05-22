@@ -2,40 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AR Food Menu</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍽️ AR Food Menu</title>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
-      font-family: sans-serif;
-      background: #000;
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
       color: #fff;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
-    .viewer-wrapper {
-      position: relative;
-      height: 100vh;
-      width: 100vw;
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+
+    .menu-bar {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .dish-card {
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      width: 100px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .dish-card:hover {
+      transform: scale(1.05);
+      border-color: #ff6600;
+    }
+
+    .dish-card img {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 5px;
     }
 
     model-viewer {
-      width: 100%;
+      width: 100vw;
       height: 100vh;
-      background: #111;
-    }
-
-    .label {
-      position: absolute;
-      bottom: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.6);
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 1.2rem;
-      font-weight: bold;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
     }
 
     #spinner {
@@ -48,41 +78,108 @@
       z-index: 999;
       display: none;
     }
+
+    #backBtn {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background: #ff6600;
+      border: none;
+      color: white;
+      padding: 10px 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1001;
+      display: none;
+    }
+
+    #backBtn:hover {
+      background: #ff8533;
+    }
   </style>
 </head>
 <body>
 
-<img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading Spinner" />
-<audio id="dish-audio" preload="auto"></audio>
+  <header>🍴 AR Food Menu – Place it in Your World</header>
 
-<div class="viewer-wrapper" data-model="dishes/burger.glb" data-sound="dishes/burger.mp3">
-  <model-viewer src="dishes/burger.glb" ar ar-modes="webxr scene-viewer quick-look"
-    autoplay camera-controls shadow-intensity="1" exposure="1">
+  <!-- Dish Switcher Menu -->
+  <div class="menu-bar" id="dishMenu">
+    <div class="dish-card" onclick="switchDish('burger.glb', 'burger.mp3')">
+      <img src="burger.jpg" alt="Burger" />
+      Burger
+    </div>
+    <div class="dish-card" onclick="switchDish('pizza.glb', 'pizza.mp3')">
+      <img src="pizza.jpg" alt="Pizza" />
+      Pizza
+    </div>
+    <div class="dish-card" onclick="switchDish('pasta.glb', 'pasta.mp3')">
+      <img src="pasta.jpg" alt="Pasta" />
+      Pasta
+    </div>
+  </div>
+
+  <!-- AR Model -->
+  <model-viewer id="viewer"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    touch-action="pan-y"
+    autoplay
+    environment-image="neutral"
+    shadow-intensity="1"
+    exposure="1">
   </model-viewer>
-  <div class="label">🍔 Burger</div>
-</div>
 
-<script>
-  const wrapper = document.querySelector('.viewer-wrapper');
-  const modelViewer = wrapper.querySelector('model-viewer');
-  const audio = document.getElementById('dish-audio');
-  const spinner = document.getElementById('spinner');
+  <!-- Spinner GIF -->
+  <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading..." />
 
-  const modelFile = wrapper.dataset.model;
-  const soundFile = wrapper.dataset.sound;
+  <!-- Audio FX -->
+  <audio id="dish-audio" preload="auto"></audio>
 
-  console.log("Loading model:", modelFile);
-  spinner.style.display = 'block';
+  <!-- Back Button -->
+  <button id="backBtn" onclick="goBackToMenu()">← Back to Menu</button>
 
-  modelViewer.addEventListener('load', () => {
-    spinner.style.display = 'none';
-    modelViewer.activateAR();
-    audio.src = soundFile;
-    audio.play().catch(() => {});
-  }, { once: true });
+  <script>
+    function switchDish(modelFile, soundFile) {
+      const viewer = document.getElementById('viewer');
+      const audio = document.getElementById('dish-audio');
+      const spinner = document.getElementById('spinner');
+      const backBtn = document.getElementById('backBtn');
+      const menu = document.getElementById('dishMenu');
 
-  modelViewer.src = modelFile; // Set after event listener
-</script>
+      // Reset and show loading
+      viewer.style.opacity = 0;
+      spinner.style.display = 'block';
+      viewer.style.display = 'block';
+
+      // Hide menu, show back button
+      menu.style.display = 'none';
+      backBtn.style.display = 'block';
+
+      // Set model
+      viewer.src = modelFile;
+
+      viewer.addEventListener('load', () => {
+        viewer.style.opacity = 1;
+        spinner.style.display = 'none';
+        viewer.activateAR();
+
+        if (soundFile) {
+          audio.src = soundFile;
+          audio.play().catch(() => {
+            console.warn("Autoplay blocked — user interaction needed.");
+          });
+        }
+      }, { once: true });
+    }
+
+    function goBackToMenu() {
+      document.getElementById('viewer').style.display = 'none';
+      document.getElementById('dishMenu').style.display = 'flex';
+      document.getElementById('backBtn').style.display = 'none';
+    }
+  </script>
 
 </body>
 </html>
