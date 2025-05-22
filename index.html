@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AR Swipe Menu</title>
+  <title>AR Food Menu</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
@@ -14,18 +14,10 @@
       overflow: hidden;
     }
 
-    .carousel {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
+    .viewer-wrapper {
+      position: relative;
       height: 100vh;
       width: 100vw;
-    }
-
-    .slide {
-      flex: 0 0 100%;
-      scroll-snap-align: center;
-      position: relative;
     }
 
     model-viewer {
@@ -39,7 +31,7 @@
       bottom: 10%;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       padding: 10px 20px;
       border-radius: 20px;
       font-size: 1.2rem;
@@ -61,68 +53,35 @@
 <body>
 
 <img id="spinner" src="https://i.gifer.com/ZZ5H.gif" alt="Loading Spinner" />
-
 <audio id="dish-audio" preload="auto"></audio>
 
-<div class="carousel" id="carousel">
-  <div class="slide" data-model="dishes/burger.glb" data-sound="dishes/burger.mp3">
-    <model-viewer src="dishes/burger.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
-    <div class="label">🍔 Burger</div>
-  </div>
-  <div class="slide" data-model="dishes/pizza.glb" data-sound="dishes/pizza.mp3">
-    <model-viewer src="dishes/pizza.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
-    <div class="label">🍕 Pizza</div>
-  </div>
-  <div class="slide" data-model="dishes/pasta.glb" data-sound="dishes/pasta.mp3">
-    <model-viewer src="dishes/pasta.glb" ar ar-modes="webxr scene-viewer quick-look" autoplay camera-controls shadow-intensity="1" exposure="1"></model-viewer>
-    <div class="label">🍝 Pasta</div>
-  </div>
+<div class="viewer-wrapper" data-model="dishes/burger.glb" data-sound="dishes/burger.mp3">
+  <model-viewer src="dishes/burger.glb" ar ar-modes="webxr scene-viewer quick-look"
+    autoplay camera-controls shadow-intensity="1" exposure="1">
+  </model-viewer>
+  <div class="label">🍔 Burger</div>
 </div>
 
 <script>
-  const carousel = document.getElementById('carousel');
+  const wrapper = document.querySelector('.viewer-wrapper');
+  const modelViewer = wrapper.querySelector('model-viewer');
   const audio = document.getElementById('dish-audio');
   const spinner = document.getElementById('spinner');
-  const slides = document.querySelectorAll('.slide');
 
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const modelViewer = entry.target.querySelector('model-viewer');
-        const modelFile = entry.target.dataset.model;
-        const soundFile = entry.target.dataset.sound;
+  const modelFile = wrapper.dataset.model;
+  const soundFile = wrapper.dataset.sound;
 
-        console.log("Loading model:", modelFile);
-        spinner.style.display = 'block';
+  console.log("Loading model:", modelFile);
+  spinner.style.display = 'block';
 
-        modelViewer.addEventListener('load', () => {
-          spinner.style.display = 'none';
-          modelViewer.activateAR();
-          audio.src = soundFile;
-          audio.play().catch(() => {});
-        }, { once: true });
+  modelViewer.addEventListener('load', () => {
+    spinner.style.display = 'none';
+    modelViewer.activateAR();
+    audio.src = soundFile;
+    audio.play().catch(() => {});
+  }, { once: true });
 
-        modelViewer.src = modelFile; // Important: set AFTER event listener
-      }
-    });
-  }, { threshold: 0.6 });
-
-  slides.forEach(slide => observer.observe(slide));
-
-  // Basic swipe support
-  let touchStartX = 0;
-  carousel.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-  });
-
-  carousel.addEventListener('touchend', e => {
-    const touchEndX = e.changedTouches[0].screenX;
-    const deltaX = touchEndX - touchStartX;
-
-    if (Math.abs(deltaX) > 50) {
-      carousel.scrollBy({ left: -deltaX, behavior: 'smooth' });
-    }
-  });
+  modelViewer.src = modelFile; // Set after event listener
 </script>
 
 </body>
